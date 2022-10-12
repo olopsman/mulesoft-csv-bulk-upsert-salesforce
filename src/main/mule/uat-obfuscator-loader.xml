@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:file="http://www.mulesoft.org/schema/mule/file" xmlns:salesforce="http://www.mulesoft.org/schema/mule/salesforce"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/salesforce http://www.mulesoft.org/schema/mule/salesforce/current/mule-salesforce.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="88146403-8f5b-47a1-b557-7680de2ceda4" >
+		<http:listener-connection host="0.0.0.0" port="7777" />
+	</http:listener-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="a24b3719-b9f4-4a16-840f-383beff706d2" />
+	<salesforce:sfdc-config name="Salesforce_Config" doc:name="Salesforce Config" doc:id="f8a600e5-7db7-4b0b-b6a2-abfc430b25c2" >
+		<salesforce:basic-connection username="${sfdc.username}" password="${sfdc.password}" url="https://test.salesforce.com/services/Soap/u/52.0" />
+	</salesforce:sfdc-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="8fa56d35-0091-473a-96ca-18ff1293a7d2" file="creds.properties" />
+	<flow name="uat-obfuscator-loaderFlow" doc:id="c744bc70-cd7d-4f3d-83b4-516c53900dd9" >
+		<http:listener doc:name="Listener" doc:id="07e4f628-e847-47ce-a3c6-20c4e5003f8f" config-ref="HTTP_Listener_config" path="/csv"/>
+		<file:read doc:name="Read" doc:id="212bf1b9-a57e-4c8e-b05e-a07b7c662266" config-ref="File_Config" path="/Users/pauloorquillo/Downloads/refresh-csv/salesforce_contact_1.csv"/>
+		<ee:transform doc:name="Transform Message" doc:id="e0e53ddc-09ad-46c2-b90f-d06244c73802">
+			<ee:message>
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/csv
+---
+payload map {
+	LastName: $." lastname",
+	FirstName: $." firstname",
+	MiddleName: $." middlename",
+	Email: $." work_email",
+	Title: $." title",
+	Customer_Sequence_Number__c: $.customer_number,
+	Preferred_Name__c: $." preferred_name",
+	Private_Email__c: $." private_email"
+}
+
+
+]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="648d44ef-016d-4fdb-8694-5e129c3d8371" message="transform is - #[payload]"/>
+		<salesforce:create-job-bulk-api-v2 objectType="Contact" operation="upsert" doc:name="Create job bulk api v 2" doc:id="0ad34e5d-dbd0-4faa-a334-a425a8a55aeb" config-ref="Salesforce_Config" externalIdFieldName="Customer_Sequence_Number__c"/>
+		<ee:transform doc:name="Transform Message" doc:id="dbd8e639-adca-431f-821a-9702dbb598c2" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="5c2a46a2-f32c-4b4e-8d1a-acfa3494707c" message="out job = #[payload]"/>
+	</flow>
+</mule>

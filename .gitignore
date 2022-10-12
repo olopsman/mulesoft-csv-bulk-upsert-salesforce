@@ -1,5 +1,5 @@
 # custom path
-./uat-obfuscator-loader/src/main/resources/resource/creds.properties
+src/main/resources/creds.properties
 
 # ------------------------------------------------------------------------------ #
 # Java defaults (https://github.com/github/gitignore/blob/master/Java.gitignore) #
