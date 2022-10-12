@@ -2,9 +2,9 @@
 <types:mule xmlns:types="http://www.mulesoft.org/schema/mule/types">
   <types:catalog>
     <types:type name="CSV" format="csv">
-      <types:shape format="weave" example="examples/salesforce_contact_1.csv"><![CDATA[%dw 2.0
+      <types:shape format="weave" example="csv/salesforce_account_1.csv"><![CDATA[%dw 2.0
 
-type CSV = Array<{|  customer_number: String,   " title": String,   " firstname": String,   " middlename": String,   " lastname": String,   " preferred_name": String,   " private_email": String,   " work_email": String|}> {"isQuotedString": "false",
+type CSV = Array<{|  consumer_no: String,   acname: String,   " acemail": String,   " acsbillemail": String|}> {"isQuotedString": "false",
 "header": "true",
 "headerLineNumber": "0"}
 
@@ -21,6 +21,25 @@ type CSV = Array<{|  customer_number: String,   " title": String,   " firstname"
       <types:input-event>
         <types:message>
           <types:payload type="CSV[]"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#53b99a5e-bcd7-40da-acfc-fbf2001ebb1d">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="CSV"/>
+          <types:attributes type="CSV[]"/>
+        </types:message>
+      </types:input-event>
+    </types:processor-declaration>
+  </types:enrichment>
+  <types:enrichment select="#209cdd75-6ecd-4b02-9c56-f423384cbe45">
+    <types:processor-declaration>
+      <types:input-event>
+        <types:message>
+          <types:payload type="CSV"/>
         </types:message>
       </types:input-event>
     </types:processor-declaration>

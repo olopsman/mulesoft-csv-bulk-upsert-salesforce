@@ -17,11 +17,14 @@ http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/fil
 	</salesforce:sfdc-config>
 	<configuration-properties doc:name="Configuration properties" doc:id="8fa56d35-0091-473a-96ca-18ff1293a7d2" file="creds.properties" />
 	<flow name="uat-obfuscator-loaderFlow" doc:id="c744bc70-cd7d-4f3d-83b4-516c53900dd9" >
-		<http:listener doc:name="Listener" doc:id="07e4f628-e847-47ce-a3c6-20c4e5003f8f" config-ref="HTTP_Listener_config" path="/csv"/>
-		<file:read doc:name="Read" doc:id="212bf1b9-a57e-4c8e-b05e-a07b7c662266" config-ref="File_Config" path="/Users/pauloorquillo/Downloads/refresh-csv/salesforce_contact_1.csv"/>
-		<ee:transform doc:name="Transform Message" doc:id="e0e53ddc-09ad-46c2-b90f-d06244c73802">
+		<http:listener doc:name="Listener" doc:id="07e4f628-e847-47ce-a3c6-20c4e5003f8f" config-ref="HTTP_Listener_config" path="/csv" allowedMethods="GET"/>
+		<logger level="INFO" doc:name="Logger" doc:id="8ed2fcb6-d8e9-4218-af1d-9e0dcf96b4a2" message="Parameter - #[payload]"/>
+		<choice doc:name="Choice" doc:id="ef323e7e-c3d9-438f-b93f-e0590f096ff5" >
+			<when expression='#[attributes.queryParams.object == "contact"]'>
+				<file:read doc:name="Read" doc:id="212bf1b9-a57e-4c8e-b05e-a07b7c662266" config-ref="File_Config" path="/Users/pauloorquillo/AnypointStudio/studio-workspace/uat-obfuscator-loader/src/main/resources/csv/salesforce_contact_1.csv" />
+				<ee:transform doc:name="Transform Message" doc:id="e0e53ddc-09ad-46c2-b90f-d06244c73802">
 			<ee:message>
-				<ee:set-payload ><![CDATA[%dw 2.0
+				<ee:set-payload><![CDATA[%dw 2.0
 output application/csv
 ---
 payload map {
@@ -39,8 +42,44 @@ payload map {
 ]]></ee:set-payload>
 			</ee:message>
 		</ee:transform>
-		<logger level="INFO" doc:name="Logger" doc:id="648d44ef-016d-4fdb-8694-5e129c3d8371" message="transform is - #[payload]"/>
-		<salesforce:create-job-bulk-api-v2 objectType="Contact" operation="upsert" doc:name="Create job bulk api v 2" doc:id="0ad34e5d-dbd0-4faa-a334-a425a8a55aeb" config-ref="Salesforce_Config" externalIdFieldName="Customer_Sequence_Number__c"/>
+				<salesforce:create-job-bulk-api-v2 objectType="Contact" operation="upsert" doc:name="Create job bulk api v 2" doc:id="0ad34e5d-dbd0-4faa-a334-a425a8a55aeb" config-ref="Salesforce_Config" externalIdFieldName="Customer_Sequence_Number__c" />
+			</when>
+			<when expression='#[attributes.queryParams.object == "contactrole"]'>
+				<file:read doc:name="Read" doc:id="dcb494f5-4c3f-44a8-bc58-de82f45c2554" config-ref="File_Config" path="/Users/pauloorquillo/AnypointStudio/studio-workspace/uat-obfuscator-loader/src/main/resources/csv/salesforce_contact_role_1.csv" />
+				<ee:transform doc:name="Transform Message" doc:id="53b99a5e-bcd7-40da-acfc-fbf2001ebb1d">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/csv
+---
+payload map {
+	Name: $." name",
+	External_Id__c: $."consumer_number-role_number",
+	Private_Email__c: $." private_email",
+	Preferred_Name__c: $." preferred_name"
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<salesforce:create-job-bulk-api-v2 objectType="Contact_Role__c" operation="upsert" doc:name="Create job bulk api v 2" doc:id="d5ce691e-0a3d-44b8-964c-62bbf63e1d0d" config-ref="Salesforce_Config" externalIdFieldName="External_Id__c" />
+			</when>
+<when expression='#[attributes.queryParams.object == "account"]'>
+				<file:read doc:name="Read" doc:id="98a048a1-d048-4e6a-a1f7-5e3c59aeaeeb" config-ref="File_Config" path="/Users/pauloorquillo/AnypointStudio/studio-workspace/uat-obfuscator-loader/src/main/resources/csv/salesforce_account_1.csv" />
+				<ee:transform doc:name="Transform Message" doc:id="209cdd75-6ecd-4b02-9c56-f423384cbe45">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/csv
+---
+payload map {
+	Name: $.acname,
+	Account_Email__c: $." acemail",
+	Ebill_Email__c: $." acsbillemail",
+	GT_Master_Consumer_Number__c: $.consumer_no
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<salesforce:create-job-bulk-api-v2 objectType="Account" operation="upsert" doc:name="Create job bulk api v 2" doc:id="965a3c9a-9998-40a6-9d6e-c1b1c0e4d493" config-ref="Salesforce_Config" externalIdFieldName="GT_Master_Consumer_Number__c" />
+			</when>			
+		</choice>
+		<salesforce:retrieve-job-failed-results-bulk-v2 doc:name="Retrieve job failed results bulk v 2" doc:id="60ee0023-898c-4c52-bdff-49f02d787a5f" config-ref="Salesforce_Config" id="#[payload.id]"/>
 		<ee:transform doc:name="Transform Message" doc:id="dbd8e639-adca-431f-821a-9702dbb598c2" >
 			<ee:message >
 				<ee:set-payload ><![CDATA[%dw 2.0
